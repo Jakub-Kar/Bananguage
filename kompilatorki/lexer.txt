@@ -1,0 +1,52 @@
+lexer grammar BananguageLexer;
+
+// Separators
+LPAREN : '(';
+RPAREN : ')';
+LBRACK : '[';
+RBRACK : ']';
+COMMA  : ',';
+DOT    : '.';
+END    : ';';
+
+// Operators
+ASSIGN   : '=';
+GT       : '>';
+LT       : '<';
+BANG     : '!';
+EQUAL    : '==';
+LE       : '<=';
+GE       : '>=';
+NOTEQUAL : '!=';
+AND      : '&&';
+OR       : '||';
+ADD      : '+';
+SUB      : '-';
+MUL      : '*';
+DIV      : '/';
+MOD      : '%';
+
+// Types
+INT_TYPE    : 'monkeiii';
+LONG_TYPE   : 'monkl';
+F64_TYPE    : 'gorilla';
+STRING_TYPE : 'lemur';
+ARRAY_TYPE  : 'bananas';
+MATRIX_TYPE : 'banatrix';
+BOOL_TYPE   : 'chimp';
+
+// Special keywords
+PEEL  : 'peel';
+PRINT : 'print';
+READ  : 'read';
+TRUE  : 'true';
+FALSE : 'false';
+
+// Identifiers and Literals
+ID             : [a-zA-Z$_][a-zA-Z0-9$_]*;
+STRING_LITERAL : '"' ( ~["\\] | '\\' . )* '"';
+FLOAT          : DIGITS DOT DIGITS;
+DIGITS         : [0-9] ([0-9_]* [0-9])?;
+
+// Skipping Whitespaces
+WS : [ \t\n\r\f]+ -> skip ;
