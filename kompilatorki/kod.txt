@@ -1,7 +1,7 @@
-read(d);
-print(a);
-bananas<gorilla> array = [gorilla 3.4, gorilla 3.1,];
-gorilla peeledBanana = peel(array 1);
 monkeiii a = 3;
 monkeiii b = 1 + 4;
 chimp c = true;
+bananas<gorilla> array = [gorilla 3.4, gorilla 3.1,];
+gorilla peeledBanana = peel(array 1);
+read(d);
+print(a);

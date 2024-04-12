@@ -20,6 +20,14 @@ builder = ir.IRBuilder(block)
 # Przechowuj zmienne w słowniku
 variables = {}
 
+# Dodajemy deklaracje funkcji printf i scanf do modułu
+printf_ty = ir.FunctionType(ir.IntType(32), [ir.PointerType(ir.IntType(8))], var_arg=True)
+printf = ir.Function(module, printf_ty, name="printf")
+
+scanf_ty = ir.FunctionType(ir.IntType(32), [ir.PointerType(ir.IntType(8))], var_arg=True)
+scanf = ir.Function(module, scanf_ty, name="scanf")
+
+
 def assign_variable(type_keyword, identifier, value):
     if type_keyword == "monkeiii":  # int
         var_type = ir.IntType(32)
@@ -49,6 +57,19 @@ def handle_arithmetic(var, op, value):
         result = builder.sdiv(left, right, name=var + "_div")
     builder.store(result, variables[var])
 
+def print_variable(var):
+    var_val = builder.load(variables[var], name=var + "_load")
+    format_str = "%d\n\0" if isinstance(var_val.type, ir.IntType) else "%f\n\0"
+    fmt_arg = builder.alloca(ir.ArrayType(ir.IntType(8), len(format_str)), name="fmt")
+    builder.store(ir.Constant(ir.ArrayType(ir.IntType(8), len(format_str)), bytearray(format_str.encode("utf8"))), fmt_arg)
+    builder.call(printf, [builder.bitcast(fmt_arg, ir.PointerType(ir.IntType(8)))])
+
+def read_variable(var):
+    fmt_str = "%d\0" if isinstance(variables[var].type.pointee, ir.IntType) else "%f\0"
+    fmt_arg = builder.alloca(ir.ArrayType(ir.IntType(8), len(fmt_str)), name="fmt")
+    builder.store(ir.Constant(ir.ArrayType(ir.IntType(8), len(fmt_str)), bytearray(fmt_str.encode("utf8"))), fmt_arg)
+    builder.call(scanf, [builder.bitcast(fmt_arg, ir.PointerType(ir.IntType(8))), variables[var]])
+
 def parse_tree(tree):
     # Regex do wyłuskania przypisania liczbowego
     num_assignments = re.findall(r"\(numAssignment (\w+) (\w+) = \(value \(numbers (\d+)\)\)\)", tree)
@@ -67,13 +88,13 @@ def parse_tree(tree):
         assign_variable(type_, var, value)
 
     # Proste przetwarzanie print i read - dla przykładu
-    # reads = re.findall(r"\(readStatement read \( (\w+) \)\)", tree)
-    # for var in reads:
-    #     read_variable(var)  # Załóżmy, że mamy funkcję do odczytu
-    #
-    # prints = re.findall(r"\(printStatement print \( (\w+) \)\)", tree)
-    # for var in prints:
-    #     print_variable(var)  # Załóżmy, że mamy funkcję do wyświetlania
+    reads = re.findall(r"\(readStatement read \( (\w+) \)\)", tree)
+    for var in reads:
+        read_variable(var)  # Załóżmy, że mamy funkcję do odczytu
+
+    prints = re.findall(r"\(printStatement print \( (\w+) \)\)", tree)
+    for var in prints:
+        print_variable(var)  # Załóżmy, że mamy funkcję do wyświetlania
 
 def compile_to_machine_code(llvm_ir):
     # Tworzenie obiektu modułu LLVM
@@ -85,6 +106,28 @@ def compile_to_machine_code(llvm_ir):
     mod.verify()
 
     return target_machine.emit_object(mod)
+
+def read_variable(var):
+    if var in variables:
+        var_alloca = variables[var]
+        fmt_str = "%d\0" if isinstance(var_alloca.type.pointee, ir.IntType) else "%f\0"
+        fmt_arg = builder.alloca(ir.ArrayType(ir.IntType(8), len(fmt_str)), name="fmt")
+        builder.store(ir.Constant(ir.ArrayType(ir.IntType(8), len(fmt_str)), bytearray(fmt_str.encode("utf8"))), fmt_arg)
+        builder.call(scanf, [builder.bitcast(fmt_arg, ir.PointerType(ir.IntType(8))), var_alloca])
+    else:
+        print(f"Variable '{var}' not declared.")
+
+
+def print_variable(var):
+    if var in variables:
+        var_val = builder.load(variables[var], name=var + "_load")
+        format_str = "%d\n\0" if isinstance(var_val.type, ir.IntType) else "%f\n\0"
+        fmt_arg = builder.alloca(ir.ArrayType(ir.IntType(8), len(format_str)), name="fmt")
+        builder.store(ir.Constant(ir.ArrayType(ir.IntType(8), len(format_str)), bytearray(format_str.encode("utf8"))), fmt_arg)
+        builder.call(printf, [builder.bitcast(fmt_arg, ir.PointerType(ir.IntType(8)))])
+    else:
+        print(f"Variable '{var}' not declared.")
+
 
 
 # Przykładowe użycie
